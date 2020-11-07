@@ -1,13 +1,23 @@
-chrome.extension.sendMessage({}, function(response) {
-	var readyStateCheckInterval = setInterval(function() {
-	if (document.readyState === "complete") {
-		clearInterval(readyStateCheckInterval);
+/* global chrome */
 
-		// ----------------------------------------------------------
-		// This part of the script triggers when page is done loading
-		console.log("Hello. This message was sent from scripts/inject.js");
-		// ----------------------------------------------------------
+console.log('inject.js loaded')
 
-	}
-	}, 10);
-});
+const port = chrome.runtime.connect({
+  name: 'onfill'
+})
+port.onMessage.addListener((msg) => {
+  console.log(msg)
+})
+
+window.onload = () => {
+  const emails = document.querySelectorAll('input[type="email"]')
+  console.log('email fields', emails)
+  emails.forEach((el) => {
+    const address = 'hi'
+    el.value = address
+    port.postMessage({
+      address,
+      origin: window.location.origin
+    })
+  })
+}

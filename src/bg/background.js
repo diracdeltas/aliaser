@@ -1,13 +1,16 @@
-// if you checked "fancy-settings" in extensionizr.com, uncomment this lines
+/* global chrome */
 
-// var settings = new Store("settings", {
-//     "sample_setting": "This is how you use Store.js to remember values"
-// });
+/*
+const settings = new window.Store('settings', {
+  sample_setting: 'sample setting'
+})
+*/
 
-
-//example of using a message handler from the inject scripts
-chrome.extension.onMessage.addListener(
-  function(request, sender, sendResponse) {
-  	chrome.pageAction.show(sender.tab.id);
-    sendResponse();
-  });
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'onfill') {
+    port.onMessage.addListener((message, p) => {
+      console.log(message)
+      console.log(p.sender)
+    })
+  }
+})
