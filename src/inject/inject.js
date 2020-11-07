@@ -1,48 +1,48 @@
 /* global chrome */
 
-let emailDomain = null
+const hostname = window.location.hostname
+let store = {}
 
 chrome.storage.sync.get(null, (obj) => {
-  console.log(obj)
-})
-
-chrome.storage.sync.get('domain', (obj) => {
-  const domain = obj.domain
+  const domain = obj.settings ? obj.settings.domain : null
   if (!domain) {
-    console.error('Email domain is not set yet. Open Aliaser options to configure.')
+    console.log(`Email domain is not set. Open chrome-extension://${chrome.runtime.id}/src/options/index.html to set it.`)
   } else {
-    emailDomain = domain
-    onload()
+    store = obj
+    onload(domain)
   }
 })
 
-const port = chrome.runtime.connect({
-  name: 'onfill'
-})
-port.onMessage.addListener((msg) => {
-  // None are sent yet
-  console.log(msg)
-})
-
-const generateRandomAddress = () => {
-  if (!emailDomain) {
+const generateAddress = (domain) => {
+  if (!domain || !hostname) {
     return null
   }
-  const rand = Math.random().toString(36).substring(2, 15) +
-    Math.random().toString(36).substring(2, 15)
-  return `${rand}@${emailDomain}`
+  const alias = hostname.split('.').reverse().join('.')
+  return `${alias}@${domain}`
 }
 
-const onload = () => {
-  const emails = document.querySelectorAll('input[type="email"]')
-  console.log('got emails', emails)
-  emails.forEach((el) => {
-    const address = generateRandomAddress()
-    if (address) {
-      el.value = address
-      port.postMessage({
-        address
-      })
+const saveAlias = (address) => {
+  chrome.storage.sync.set({
+    [hostname]: {
+      address,
+      secure: window.location.protocol === 'https:',
+      timestamp: Date.now()
     }
   })
+}
+
+const onload = (domain) => {
+  const emails = document.querySelectorAll('input[type="email"]')
+  if (emails.length) {
+    const existing = store[hostname]
+    const address = existing ? existing.address : generateAddress(domain)
+    if (address) {
+      emails.forEach((el) => {
+        el.value = address
+      })
+      if (!existing) {
+        saveAlias(address)
+      }
+    }
+  }
 }
